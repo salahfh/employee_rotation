@@ -25,24 +25,20 @@ for row in employees_df.iter_rows():
     emp = Employee.new(row, departments=departements)
     emp.time_simulator = t_simulator
     employees.append(emp)
-    # break
 
 
-rotations = []
 for index in range(config.rotations):
     t_simulator.forward_in_future(config.rotation_length_in_months)
     employees = rotate_employees(employees, departements)
-    for emp in employees:
-        if emp.current_department is None:
-            continue
-        rotations.append(
-            f"+{config.rotation_length_in_months}, {t_simulator.now().date()},"
-            f"{emp.full_name.ljust(40)}, {emp.current_department}"
+
+    for dept in departements:
+        print(
+            f"{t_simulator.now().strftime('%Y-%m')} "
+            f"{dept.name.rjust(15)} "
+            f"({dept.current_capacity}/{dept.max_capacity}): "
+            f"{[emp.full_name for emp in dept.employees]} "
         )
-
-
-for rot in rotations:
-    print(rot)
+    print()
 
 
 if __name__ == "__main__":

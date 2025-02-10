@@ -37,7 +37,7 @@ class Employee:
     def has_completed_training(self) -> bool:
         if self.current_department is None:
             raise EmployeeNotAssignedtoDepartmentException
-        return self.current_department.duration_months - self.month_spent_training < 0
+        return self.current_department.duration - self.month_spent_training < 0
 
     def has_department(self):
         return self.current_department is not None
@@ -61,7 +61,7 @@ class Employee:
         if self.start_date is None:
             return 0
         now = self.time_simulator.now()
-        return (now - self.start_date).days / 30
+        return (now - self.start_date).days 
 
     @staticmethod
     def new(row: tuple, departments: list[TrainingDepartment]) -> Self:
@@ -85,6 +85,10 @@ class TrainingDepartment:
 
     def __repr__(self):
         return f"{self.name} ({self.current_capacity}/{self.max_capacity} with {self.duration_months} months)"
+
+    @property
+    def duration(self):
+        return self.duration_months * 30
 
     @property
     def current_capacity(self):

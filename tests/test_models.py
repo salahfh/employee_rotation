@@ -89,7 +89,7 @@ def test_employee_time_spent_training():
     assert chouaib.month_spent_training == 0
 
     chouaib.start_date = dt(2025, 1, 1)
-    assert chouaib.month_spent_training == 1.3
+    assert chouaib.month_spent_training == 40
 
 
 def test_employee_has_completed_training():
