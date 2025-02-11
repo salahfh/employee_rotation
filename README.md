@@ -16,7 +16,7 @@ Follow the steps to install the software
 - Change to the newly created folder `cd bin`
 - Create a virtual enviroment for python application `python -m venv venv`
 - Activate the virtual enviroment `.\venv\Scripts\activate`
-- Install package from repo: `pip install git@github.com:salahfh/employee_rotation.git`
+- Install package from repo: `pip install git+https://github.com/salahfh/employee_rotation.git`
 
 ## Usage
 
