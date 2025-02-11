@@ -1,7 +1,7 @@
 [project]
 name = "employee-rotation"
 version = "0.1.0"
-description = "Add your description here"
+description = "Assistant for employee training rotation."
 readme = "README.md"
 authors = [
     { name = "Saoud Salah Eddine", email = "salah_fh@outlook.com" }

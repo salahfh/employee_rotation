@@ -1,2 +1,3 @@
-def main() -> None:
-    print("Hello from employee-rotation!")
+from employee_rotation.app import main
+
+main()

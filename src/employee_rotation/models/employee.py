@@ -1,6 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Self
+from itertools import product
 import datetime as dt
 
 from employee_rotation.models.exceptions import (
@@ -61,7 +62,7 @@ class Employee:
         if self.start_date is None:
             return 0
         now = self.time_simulator.now()
-        return (now - self.start_date).days 
+        return (now - self.start_date).days
 
     @staticmethod
     def new(row: tuple, departments: list[TrainingDepartment]) -> Self:
@@ -142,14 +143,14 @@ def rotate_employees(
         if emp.has_completed_training():
             emp.current_department.remove_employee(emp)
 
-    for emp in emps:
-        for dept in departments:
-            if not dept.has_capacity():
-                continue
-            if dept in emp.previous_departments:
-                continue
-            if not emp.has_department():
-                dept.assign_employee(emp)
+    for emp, dept in product(emps, departments):
+        # for dept in departments:
+        if not dept.has_capacity():
+            continue
+        if dept in emp.previous_departments:
+            continue
+        if not emp.has_department():
+            dept.assign_employee(emp)
     return emps
 
 
