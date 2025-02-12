@@ -18,6 +18,15 @@ Follow the steps to install the software
 - Activate the virtual enviroment `.\venv\Scripts\activate`
 - Install package from repo: `pip install git+https://github.com/salahfh/employee_rotation.git`
 
+## Update
+
+To update follow these step
+
+- Change to the newly created folder `cd bin`
+- Open `PowerShell` from windows start menu
+- Activate the virtual enviroment `.\venv\Scripts\activate`
+- Install package from repo: `pip install git+https://github.com/salahfh/employee_rotation.git`
+
 ## Usage
 
 To use the program follow these steps below
