@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
-from typing import Self
+from typing import Self, Optional
 from itertools import product
 import datetime as dt
 
@@ -15,7 +15,7 @@ class TimeSimulator:
     forwarded_months = 0
 
     @classmethod
-    def forward_in_future(cls, months: int) -> None:
+    def forward_in_future(cls, months: float) -> None:
         cls.forwarded_months += months
 
     @classmethod
@@ -27,18 +27,18 @@ class TimeSimulator:
 class Employee:
     first_name: str
     last_name: str
-    _current_department: TrainingDepartment | None = None
-    start_date: dt.datetime | None = None
+    _current_department: Optional[TrainingDepartment] = None
+    start_date: Optional[dt.datetime] = None
     previous_departments: list[TrainingDepartment] = field(default_factory=list)
-    time_simulator: TimeSimulator | dt.datetime = dt.datetime
+    time_simulator: TimeSimulator= dt.datetime  # type:ignore
 
     def __repr__(self) -> str:
-        return f"{self.first_name} works in {self.current_department} since {self.month_spent_training:.0f} month(s)"
+        return f"{self.first_name} works in {self.current_department} since {self.days_spent_training:.0f} month(s)"
 
     def has_completed_training(self) -> bool:
         if self.current_department is None:
             raise EmployeeNotAssignedtoDepartmentException
-        return self.current_department.duration - self.month_spent_training < 0
+        return self.current_department.duration - self.days_spent_training < 0
 
     def has_department(self):
         return self.current_department is not None
@@ -48,24 +48,24 @@ class Employee:
         return f"{self.last_name} {self.first_name}".title()
 
     @property
-    def current_department(self):
+    def current_department(self) -> Optional[TrainingDepartment]:
         return self._current_department
 
     @current_department.setter
-    def current_department(self, value: TrainingDepartment):
+    def current_department(self, value: Optional[TrainingDepartment]):
         if self._current_department is not None:
             self.previous_departments.append(self._current_department)
         self._current_department = value
 
     @property
-    def month_spent_training(self) -> int:
+    def days_spent_training(self) -> int:
         if self.start_date is None:
             return 0
         now = self.time_simulator.now()
         return (now - self.start_date).days
 
     @staticmethod
-    def new(row: tuple, departments: list[TrainingDepartment]) -> Self:
+    def new(row: tuple, departments: list[TrainingDepartment]) -> "Employee":
         emp = Employee(first_name=row[0], last_name=row[1], start_date=row[2])
 
         str_dept = row[3]
@@ -82,7 +82,7 @@ class TrainingDepartment:
     duration_months: int
     max_capacity: int
     employees: list[Employee] = field(default_factory=list)
-    time_simulator: TimeSimulator | dt.datetime = dt.datetime
+    time_simulator: TimeSimulator = dt.datetime  # type: ignore
 
     def __repr__(self):
         return f"{self.name} ({self.current_capacity}/{self.max_capacity} with {self.duration_months} months)"
@@ -99,7 +99,7 @@ class TrainingDepartment:
         return self.current_capacity < self.max_capacity
 
     def assign_employee(
-        self, emp: Employee, start_date_overwright: dt.datetime = None
+        self, emp: Employee, start_date_overwright: Optional[dt.datetime] = None
     ) -> Self:
         if not self.has_capacity():
             raise DepartmentFullException
@@ -121,7 +121,7 @@ class TrainingDepartment:
         return self
 
     @staticmethod
-    def new(row: tuple) -> Self:
+    def new(row: tuple) -> "TrainingDepartment":
         return TrainingDepartment(
             name=row[0], duration_months=row[1], max_capacity=row[2]
         )
@@ -141,15 +141,15 @@ def rotate_employees(
         if not emp.has_department():
             continue
         if emp.has_completed_training():
-            emp.current_department.remove_employee(emp)
+            emp.current_department.remove_employee(emp)  # type: ignore
 
     for emp, dept in product(emps, departments):
         # for dept in departments:
         if not dept.has_capacity():
             continue
-        if dept in emp.previous_departments:
+        elif dept in emp.previous_departments:
             continue
-        if not emp.has_department():
+        elif not emp.has_department():
             dept.assign_employee(emp)
     return emps
 

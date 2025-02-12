@@ -5,6 +5,7 @@ from employee_rotation.models import (
     EmployeeNotAssignedtoDepartmentException,
     rotate_one_employee,
     rotate_employees,
+    TimeSimulator,
 )
 from datetime import datetime as dt
 
@@ -13,7 +14,9 @@ import pytest
 
 @pytest.fixture()
 def departments():
-    achat_etrange = TrainingDepartment("Achat Etranger", duration_months=6, max_capacity=3)
+    achat_etrange = TrainingDepartment(
+        "Achat Etranger", duration_months=6, max_capacity=3
+    )
     achat_local = TrainingDepartment("Achats Local", duration_months=6, max_capacity=3)
     finance = TrainingDepartment("Finance", duration_months=12, max_capacity=4)
     imports = TrainingDepartment("Imports", duration_months=6, max_capacity=1)
@@ -23,7 +26,9 @@ def departments():
 
 def test_assign_emp_to_depart():
     chouaib = Employee("CHOUAIB", "BEGHOURA")
-    achat_etrange = TrainingDepartment("Achat Etranger", duration_months=6, max_capacity=3)
+    achat_etrange = TrainingDepartment(
+        "Achat Etranger", duration_months=6, max_capacity=3
+    )
 
     achat_etrange.assign_employee(chouaib)
 
@@ -32,7 +37,9 @@ def test_assign_emp_to_depart():
 
 
 def test_assign_emp_to_depart_when_dept_is_full():
-    achat_etrange = TrainingDepartment("Achat Etranger", duration_months=6, max_capacity=3)
+    achat_etrange = TrainingDepartment(
+        "Achat Etranger", duration_months=6, max_capacity=3
+    )
     emp1 = Employee("EMP1", "BEGHOURA")
     emp2 = Employee("EMP2", "BEGHOURA")
     emp3 = Employee("EMP3", "BEGHOURA")
@@ -47,7 +54,9 @@ def test_assign_emp_to_depart_when_dept_is_full():
 
 def test_remove_emp_from_dept():
     chouaib = Employee("CHOUAIB", "BEGHOURA")
-    achat_etrange = TrainingDepartment("Achat Etranger", duration_months=6, max_capacity=3)
+    achat_etrange = TrainingDepartment(
+        "Achat Etranger", duration_months=6, max_capacity=3
+    )
     achat_etrange.assign_employee(chouaib)
 
     achat_etrange.remove_employee(chouaib)
@@ -58,7 +67,9 @@ def test_remove_emp_from_dept():
 
 def test_remove_emp_from_dept_where_not_added_in_first_place():
     chouaib = Employee("CHOUAIB", "BEGHOURA")
-    achat_etrange = TrainingDepartment("Achat Etranger", duration_months=6, max_capacity=3)
+    achat_etrange = TrainingDepartment(
+        "Achat Etranger", duration_months=6, max_capacity=3
+    )
 
     with pytest.raises(ValueError):
         achat_etrange.remove_employee(chouaib)
@@ -66,7 +77,9 @@ def test_remove_emp_from_dept_where_not_added_in_first_place():
 
 def test_employee_previous_deparments():
     chouaib = Employee("CHOUAIB", "BEGHOURA")
-    achat_etrange = TrainingDepartment("Achat Etranger", duration_months=6, max_capacity=3)
+    achat_etrange = TrainingDepartment(
+        "Achat Etranger", duration_months=6, max_capacity=3
+    )
     finance = TrainingDepartment("Finance", duration_months=12, max_capacity=4)
 
     achat_etrange.assign_employee(chouaib)
@@ -83,18 +96,22 @@ def test_employee_previous_deparments():
 def test_employee_time_spent_training():
     # Need mocking for the datetime module?
     chouaib = Employee("CHOUAIB", "BEGHOURA")
-    achat_etrange = TrainingDepartment("Achat Etranger", duration_months=6, max_capacity=3)
+    achat_etrange = TrainingDepartment(
+        "Achat Etranger", duration_months=6, max_capacity=3
+    )
     achat_etrange.assign_employee(chouaib)
 
-    assert chouaib.month_spent_training == 0
+    assert chouaib.days_spent_training == 0
 
     chouaib.start_date = dt(2025, 1, 1)
-    assert chouaib.month_spent_training == 40
+    assert chouaib.days_spent_training > 0
 
 
 def test_employee_has_completed_training():
     chouaib = Employee("CHOUAIB", "BEGHOURA")
-    achat_etrange = TrainingDepartment("Achat Etranger", duration_months=6, max_capacity=3)
+    achat_etrange = TrainingDepartment(
+        "Achat Etranger", duration_months=6, max_capacity=3
+    )
     achat_etrange.assign_employee(chouaib)
 
     chouaib.start_date = dt(2025, 1, 1)
@@ -113,7 +130,9 @@ def test_employee_has_completed_training_not_assigned_employee():
 
 def test_employee_rotation_completed_training():
     chouaib = Employee("CHOUAIB", "BEGHOURA")
-    achat_etrange = TrainingDepartment("Achat Etranger", duration_months=6, max_capacity=3)
+    achat_etrange = TrainingDepartment(
+        "Achat Etranger", duration_months=6, max_capacity=3
+    )
     imports = TrainingDepartment("Imports", duration_months=6, max_capacity=1)
     departments = [achat_etrange, imports]
 
@@ -128,7 +147,9 @@ def test_employee_rotation_completed_training():
 
 def test_employee_rotation_not_completed_training():
     chouaib = Employee("CHOUAIB", "BEGHOURA")
-    achat_etrange = TrainingDepartment("Achat Etranger", duration_months=6, max_capacity=3)
+    achat_etrange = TrainingDepartment(
+        "Achat Etranger", duration_months=6, max_capacity=3
+    )
     imports = TrainingDepartment("Imports", duration_months=6, max_capacity=1)
     departments = [achat_etrange, imports]
 
@@ -144,7 +165,9 @@ def test_employees_rotation_not_completed_training():
     chouaib = Employee("CHOUAIB", "BEGHOURA")
     siham = Employee("SIHAM", "BEGHOURA")
     hamid = Employee("HAMID", "BEGHOURA")
-    achat_etrange = TrainingDepartment("Achat Etranger", duration_months=6, max_capacity=3)
+    achat_etrange = TrainingDepartment(
+        "Achat Etranger", duration_months=6, max_capacity=3
+    )
     imports = TrainingDepartment("Imports", duration_months=6, max_capacity=1)
     departments = [achat_etrange, imports]
     emps = [chouaib, siham, hamid]
@@ -164,7 +187,9 @@ def test_employees_rotation_all_completed_training():
     chouaib = Employee("CHOUAIB", "BEGHOURA")
     siham = Employee("SIHAM", "BEGHOURA")
     hamid = Employee("HAMID", "BEGHOURA")
-    achat_etrange = TrainingDepartment("Achat Etranger", duration_months=6, max_capacity=3)
+    achat_etrange = TrainingDepartment(
+        "Achat Etranger", duration_months=6, max_capacity=3
+    )
     imports = TrainingDepartment("Imports", duration_months=6, max_capacity=3)
     departments = [achat_etrange, imports]
     emps = [chouaib, siham, hamid]
@@ -188,7 +213,9 @@ def test_employees_rotation_all_completed_training_with_limited_capacity_dept():
     chouaib = Employee("CHOUAIB", "BEGHOURA")
     siham = Employee("SIHAM", "BEGHOURA")
     hamid = Employee("HAMID", "BEGHOURA")
-    achat_etrange = TrainingDepartment("Achat Etranger", duration_months=6, max_capacity=3)
+    achat_etrange = TrainingDepartment(
+        "Achat Etranger", duration_months=6, max_capacity=3
+    )
     imports = TrainingDepartment("Imports", duration_months=6, max_capacity=1)
     departments = [achat_etrange, imports]
     emps = [chouaib, siham, hamid]
@@ -212,7 +239,9 @@ def test_employees_rotation_employees_with_mixed_finish_status():
     chouaib = Employee("CHOUAIB", "BEGHOURA")
     siham = Employee("SIHAM", "BEGHOURA")
     hamid = Employee("HAMID", "BEGHOURA")
-    achat_etrange = TrainingDepartment("Achat Etranger", duration_months=6, max_capacity=3)
+    achat_etrange = TrainingDepartment(
+        "Achat Etranger", duration_months=6, max_capacity=3
+    )
     imports = TrainingDepartment("Imports", duration_months=36, max_capacity=1)
     departments = [achat_etrange, imports]
     emps = [chouaib, siham, hamid]

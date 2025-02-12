@@ -36,5 +36,12 @@ def load_data(input_folder: Path):
     return department, employees
 
 
+def write_data(file: Path, data: list[str]):
+    with open(file, "w") as f:
+        for line in data:
+            f.write(line)
+            f.write("\n")
+
+
 if __name__ == "__main__":
-    print(load_data("/home/salah/employee_rotation/data.csv"))
+    pass
