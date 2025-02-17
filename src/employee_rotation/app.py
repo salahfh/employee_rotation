@@ -22,13 +22,23 @@ def format_employees_output(
             continue
         else:
             if emp.current_department is None:
-                message = f"  Removed  {emp.full_name.ljust(30, '.')} from {employees_track[emp.full_name][1].name}"
+                action = "Waiting Reassignment"
+                dept = employees_track[emp.full_name][1].name
+                indicator = "<-"
+
             else:
-                message = f"  Assigned {emp.full_name.ljust(30, '.')} to {emp.current_department.name}"
+                action = "Assigned"
+                dept = emp.current_department.name
+                indicator = "->"
 
             if len(emp.previous_departments) == len(departements):
-                message = f"  ** Training Completed for {emp.full_name} **"
+                action = "Training Completed"
+                dept = "Finished"
+                indicator = "**"
 
+            message = (
+                f"{action.rjust(30)}: {emp.full_name.ljust(30, '.')} {indicator} {dept}"
+            )
             lines.append(message)
             employees_track[emp.full_name] = (emp.hash, emp.current_department)
     return lines
@@ -45,15 +55,14 @@ def format_depatements_output(
     for dept in sorted(departements, key=lambda dept: dept.max_capacity):
         if departements_track[dept.name] == dept.hash:
             continue
-        else:
-            departements_track[dept.name] = dept.hash
 
-            lines.append(
-                f"{dept.time_simulator.now().strftime('%Y-%m')} "
-                f"{dept.name.rjust(15)} "
-                f"({dept.current_capacity}/{dept.max_capacity}): "
-                f"{sorted([emp.full_name for emp in dept.employees])} "
-            )
+        lines.append(
+            f"{dept.time_simulator.now().strftime('%Y-%m')} "
+            f"{dept.name.rjust(15)} "
+            f"({dept.current_capacity}/{dept.max_capacity}): "
+            f"{sorted([emp.full_name for emp in dept.employees])} "
+        )
+        departements_track[dept.name] = dept.hash
     return lines
 
 
@@ -82,6 +91,13 @@ def main():
     employees_track = {
         emp.full_name: (emp.hash, emp.current_department) for emp in employees
     }
+
+    # Before ratation
+    departements_formating = format_depatements_output(departements, departements_track)
+    lines.extend(departements_formating)
+    lines.extend(format_employees_output(employees, employees_track, departements))
+    lines.append("\n")
+    lines.append("-----" * 30)
 
     # rotate employees
     for _ in range(config.rotations):
