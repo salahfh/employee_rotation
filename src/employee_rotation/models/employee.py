@@ -1,4 +1,6 @@
 from __future__ import annotations
+from random import choice
+from dateutil.relativedelta import relativedelta
 from dataclasses import dataclass, field
 from typing import Self, Optional
 from itertools import product
@@ -22,6 +24,11 @@ class TimeSimulator:
     def now(cls) -> dt.datetime:
         return dt.datetime.now() + dt.timedelta(days=30 * cls.forwarded_months)
 
+    @classmethod
+    def offset_month_randomly(cls, date: dt.datetime) -> dt.datetime:
+        """Adds a month or deduct a month randomly from a date"""
+        return date + relativedelta(months=choice([0, 1, 2]))
+
 
 @dataclass
 class Employee:
@@ -30,7 +37,7 @@ class Employee:
     _current_department: Optional[TrainingDepartment] = None
     start_date: Optional[dt.datetime] = None
     previous_departments: list[TrainingDepartment] = field(default_factory=list)
-    time_simulator: TimeSimulator= dt.datetime  # type:ignore
+    time_simulator: TimeSimulator = dt.datetime  # type:ignore
 
     def __repr__(self) -> str:
         return f"{self.first_name} works in {self.current_department} since {self.days_spent_training:.0f} month(s)"
@@ -64,6 +71,18 @@ class Employee:
         now = self.time_simulator.now()
         return (now - self.start_date).days
 
+    @property
+    def hash(self):
+        return self.__hash__()
+
+    def __hash__(self):
+        dept = (
+            str(self.current_department.name)
+            if self.current_department is not None
+            else ""
+        )
+        return hash((self.full_name, dept))
+
     @staticmethod
     def new(row: tuple, departments: list[TrainingDepartment]) -> "Employee":
         emp = Employee(first_name=row[0], last_name=row[1], start_date=row[2])
@@ -71,7 +90,7 @@ class Employee:
         str_dept = row[3]
         for dept in departments:
             if dept.name == str_dept:
-                dept.assign_employee(emp, start_date_overwright=emp.start_date)
+                dept.assign_employee(emp, start_date_overright=emp.start_date)
                 break
         return emp
 
@@ -95,19 +114,23 @@ class TrainingDepartment:
     def current_capacity(self):
         return len(self.employees)
 
+    @property
+    def hash(self):
+        return hash(tuple(self.employees))
+
     def has_capacity(self) -> bool:
         return self.current_capacity < self.max_capacity
 
     def assign_employee(
-        self, emp: Employee, start_date_overwright: Optional[dt.datetime] = None
+        self, emp: Employee, start_date_overright: Optional[dt.datetime] = None
     ) -> Self:
         if not self.has_capacity():
             raise DepartmentFullException
         self.employees.append(emp)
         emp.current_department = self
         emp.start_date = self.time_simulator.now()
-        if start_date_overwright:
-            emp.start_date = start_date_overwright
+        if start_date_overright:
+            emp.start_date = start_date_overright
         return self
 
     def remove_employee(self, emp: Employee) -> Self:
@@ -144,7 +167,6 @@ def rotate_employees(
             emp.current_department.remove_employee(emp)  # type: ignore
 
     for emp, dept in product(emps, departments):
-        # for dept in departments:
         if not dept.has_capacity():
             continue
         elif dept in emp.previous_departments:
