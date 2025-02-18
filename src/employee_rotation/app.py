@@ -117,7 +117,7 @@ def format_depatements_output(
 
         lines.append(
             f"{dept.time_simulator.now().strftime('%Y-%m')} "
-            f"{dept.name.rjust(15)} "
+            f"{dept.name.rjust(16)} "
             f"({dept.current_capacity}/{dept.max_capacity}): "
             f"{sorted([emp.full_name for emp in dept.employees])} "
         )
