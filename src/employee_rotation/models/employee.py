@@ -116,7 +116,7 @@ class TrainingDepartment:
 
     @property
     def hash(self):
-        return hash(tuple(self.employees))
+        return hash(tuple((self.name, *self.employees)))
 
     def has_capacity(self) -> bool:
         return self.current_capacity < self.max_capacity

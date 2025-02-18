@@ -49,7 +49,7 @@ def clean_up_output(lines):
     Remove the extra white line and add one when necessary
     '''
     prev_line = lines[0]
-    new_lines = []
+    new_lines = [prev_line]
     for line in lines[1:]:
         if line == "\n" and prev_line == "\n":
             continue

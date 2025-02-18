@@ -126,4 +126,4 @@ def format_depatements_output(
 
 
 if __name__ == "__main__":
-    pass
+    main()
