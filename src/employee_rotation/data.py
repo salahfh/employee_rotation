@@ -37,10 +37,27 @@ def load_data(input_folder: Path):
 
 
 def write_data(file: Path, data: list[str]):
+    data = clean_up_output(data)
     with open(file, "w") as f:
         for line in data:
             f.write(line)
             f.write("\n")
+
+
+def clean_up_output(lines):
+    '''
+    Remove the extra white line and add one when necessary
+    '''
+    prev_line = lines[0]
+    new_lines = []
+    for line in lines[1:]:
+        if line == "\n" and prev_line == "\n":
+            continue
+        if not prev_line.startswith("  ") and line.startswith("  "):
+            new_lines.append("\n")
+        prev_line = line
+        new_lines.append(line)
+    return new_lines
 
 
 if __name__ == "__main__":
