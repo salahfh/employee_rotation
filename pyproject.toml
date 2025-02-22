@@ -1,6 +1,6 @@
 [project]
 name = "employee-rotation"
-version = "0.1.3"
+version = "0.1.4"
 description = "Assistant for employee training rotation."
 readme = "README.md"
 authors = [

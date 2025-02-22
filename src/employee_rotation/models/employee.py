@@ -137,7 +137,8 @@ class TrainingDepartment:
         return self
 
     def exclude_employee(self, emp: Employee) -> Self:
-        emp.excluded_departments.append(self)
+        if self.name not in [dp.name for dp in emp.excluded_departments]:
+            emp.excluded_departments.append(self)
         return self
 
     def remove_employee(self, emp: Employee) -> Self:
@@ -187,7 +188,7 @@ def rotate_employees(
             continue
         elif filter.check(emp, dept, filter_type="Exclusion"):
             dept.exclude_employee(emp)
-        if filter.check(emp, dept, filter_type="Operation"):
+        elif filter.check(emp, dept, filter_type="Operation"):
             continue
         elif not emp.has_department():
             dept.assign_employee(emp)

@@ -12,11 +12,10 @@ from employee_rotation.data import load_data, write_data
 def main():
     config = Config()
     t_simulator = TimeSimulator()
-    filters = FilterRules().add_filters(
-        config.exclution_filters, filter_type="Exclusion"
-    )
-    filters = FilterRules().add_filters(
-        config.operation_filters, filter_type="Operation"
+    filters = (
+        FilterRules()
+        .add_filters(config.exclution_filters, filter_type="Exclusion")
+        .add_filters(config.operation_filters, filter_type="Operation")
     )
 
     departments_df, employees_df = load_data(config.INPUT_FOLDER / "data.csv")

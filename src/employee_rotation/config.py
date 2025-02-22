@@ -6,7 +6,7 @@ from dataclasses import dataclass
 class Config:
     INPUT_FOLDER = Path().home() / "employee_rotation"
     OUTPUT_FOLDER = Path().home() / "employee_rotation"
-    years_of_plan = 15
+    years_of_plan = 25
     rotations = years_of_plan * 12
     delay_start_by_months = 2
     rotation_length_in_months = 1.01
