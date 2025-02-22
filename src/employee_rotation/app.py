@@ -12,7 +12,12 @@ from employee_rotation.data import load_data, write_data
 def main():
     config = Config()
     t_simulator = TimeSimulator()
-    filters = FilterRules().add_filters(config.filters)
+    filters = FilterRules().add_filters(
+        config.exclution_filters, filter_type="Exclusion"
+    )
+    filters = FilterRules().add_filters(
+        config.operation_filters, filter_type="Operation"
+    )
 
     departments_df, employees_df = load_data(config.INPUT_FOLDER / "data.csv")
 
@@ -128,6 +133,8 @@ def format_depatements_output(
             f"{dept.name.rjust(16)} "
             f"({dept.current_capacity}/{dept.max_capacity}): "
             f"{sorted([emp.full_name for emp in dept.employees])} "
+            f"({dept._rotation_movement.count('-')}-/"
+            f"{dept._rotation_movement.count('+')}+)"
         )
         departements_track[dept.name] = dept.hash
     return lines

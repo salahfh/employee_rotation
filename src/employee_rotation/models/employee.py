@@ -2,7 +2,7 @@ from __future__ import annotations
 from random import choice
 from dateutil.relativedelta import relativedelta
 from dataclasses import dataclass, field
-from typing import Self, Optional, Literal, Callable
+from typing import Self, Optional, Literal
 from itertools import product
 import datetime as dt
 
@@ -106,6 +106,7 @@ class TrainingDepartment:
     max_capacity: int
     employees: list[Employee] = field(default_factory=list)
     time_simulator: TimeSimulator = dt.datetime  # type: ignore
+    _rotation_movement: str = ""
 
     def __repr__(self):
         return f"{self.name} ({self.current_capacity}/{self.max_capacity} with {self.duration_months} months)"
@@ -122,6 +123,9 @@ class TrainingDepartment:
     def hash(self):
         return hash(tuple((self.name, *self.employees)))
 
+    def reset_mouvement_counter(self):
+        self._rotation_movement = ""
+
     def has_capacity(self) -> bool:
         return self.current_capacity < self.max_capacity
 
@@ -135,6 +139,7 @@ class TrainingDepartment:
         emp.start_date = self.time_simulator.now()
         if start_date_overright:
             emp.start_date = start_date_overright
+        self._rotation_movement += "+"
         return self
 
     def exclude_employee(self, emp: Employee) -> Self:
@@ -149,6 +154,7 @@ class TrainingDepartment:
                 self.employees.remove(emp)
                 emp.current_department = None
                 emp.start_date = None
+        self._rotation_movement += "-"
         return self
 
     @staticmethod
@@ -161,28 +167,52 @@ class TrainingDepartment:
 class FilterRules:
     """
     Apply filter rules.
+
+    Operation rules are conserned with delaying the action.
+    Excelution rules are for permenat actions.
     """
 
     def __init__(
         self,
-        filters: Optional[list[Callable[[Employee, TrainingDepartment], bool]]] = None,
     ) -> None:
-        self.filters = filters or list()
+        self.exclusion_filters = list()
+        self.operational_filters = list()
 
-    def check(self, emp: Employee, dept: TrainingDepartment) -> bool:
-        for fltr in self.filters:
+    def check(
+        self,
+        emp: Employee,
+        dept: TrainingDepartment,
+        *,
+        filter_type: Literal["Exclusion", "Operation"],
+    ) -> bool:
+        filters = (
+            self.exclusion_filters
+            if filter_type == "Exclusion"
+            else self.operational_filters
+        )
+        for fltr in filters:
             if fltr(emp, dept):
                 return True
         return False
 
-    def add_filters(self, names: list[str]) -> Self:
+    def add_filters(
+        self,
+        names: list[str],
+        *,
+        filter_type: Literal["Exclusion", "Operation"],
+    ) -> Self:
+        filters = (
+            self.exclusion_filters
+            if filter_type == "Exclusion"
+            else self.operational_filters
+        )
         for name in names:
             filter_func = getattr(self, name)
             if filter_func is None:
                 raise ValueError(
                     f"{name} is not a valid filter. please change your configration"
                 )
-            self.filters.append(filter_func)
+            filters.append(filter_func)
         return self
 
     @staticmethod
@@ -191,6 +221,16 @@ class FilterRules:
         dept: TrainingDepartment,
     ) -> bool:
         if emp.sexe == "F" and dept.name == "Immobilisations":
+            return True
+        return False
+
+    @staticmethod
+    def cannot_move_more_than_limit(
+        emp: Employee,
+        dept: TrainingDepartment,
+    ) -> bool:
+        limit = 1
+        if dept._rotation_movement.count("+") > limit - 1:
             return True
         return False
 
@@ -204,10 +244,15 @@ def rotate_one_employee(
 def rotate_employees(
     emps: list[Employee],
     departments: list[TrainingDepartment],
-    filter: FilterRules = FilterRules(filters=[]),
+    filter: FilterRules = FilterRules(),
 ) -> list[Employee]:
+    for dept in departments:
+        dept.reset_mouvement_counter()
+
     for emp in emps:
         if not emp.has_department():
+            continue
+        if filter.check(emp, emp.current_department, filter_type="Operation"):  # type: ignore
             continue
         if emp.has_completed_training():
             emp.current_department.remove_employee(emp)  # type: ignore
@@ -217,8 +262,10 @@ def rotate_employees(
             continue
         elif dept in emp.previous_departments:
             continue
-        elif filter.check(emp, dept):
+        elif filter.check(emp, dept, filter_type="Exclusion"):
             dept.exclude_employee(emp)
+        if filter.check(emp, dept, filter_type="Operation"):
+            continue
         elif not emp.has_department():
             dept.assign_employee(emp)
     return emps
