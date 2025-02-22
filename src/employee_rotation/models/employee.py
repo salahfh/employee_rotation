@@ -2,7 +2,7 @@ from __future__ import annotations
 from random import choice
 from dateutil.relativedelta import relativedelta
 from dataclasses import dataclass, field
-from typing import Self, Optional
+from typing import Self, Optional, Literal
 from itertools import product
 import datetime as dt
 
@@ -34,6 +34,7 @@ class TimeSimulator:
 class Employee:
     first_name: str
     last_name: str
+    sexe: Literal["M", "F"] = "M"
     _current_department: Optional[TrainingDepartment] = None
     start_date: Optional[dt.datetime] = None
     previous_departments: list[TrainingDepartment] = field(default_factory=list)
@@ -85,9 +86,11 @@ class Employee:
 
     @staticmethod
     def new(row: tuple, departments: list[TrainingDepartment]) -> "Employee":
-        emp = Employee(first_name=row[0], last_name=row[1], start_date=row[2])
+        emp = Employee(
+            first_name=row[0], last_name=row[1], sexe=row[2], start_date=row[3]
+        )
 
-        str_dept = row[3]
+        str_dept = row[4]
         for dept in departments:
             if dept.name == str_dept:
                 dept.assign_employee(emp, start_date_overright=emp.start_date)

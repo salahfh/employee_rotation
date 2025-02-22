@@ -38,6 +38,9 @@ def main():
     produce_rotation_output(
         departements, employees, lines, departements_track, employees_track
     )
+    
+    # start delayed by month
+    t_simulator.forward_in_future(config.delay_start_by_months)
 
     # rotate employees
     for _ in range(config.rotations):

@@ -1,6 +1,6 @@
 # Employee Rotation
 
-Help your plan employee training accross departments.
+Help your plan employee training across departments.
 
 ## Setup
 
