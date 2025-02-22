@@ -57,7 +57,7 @@ class FilterRules:
                     f_name = f_name
                     kwargs = {}
 
-            if f_name is None:
+            if not hasattr(self, f_name):
                 raise ValueError(
                     f"{f_name} is not a valid filter. please change your configration"
                 )
