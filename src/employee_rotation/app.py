@@ -2,6 +2,7 @@ from employee_rotation.config import Config
 from employee_rotation.models import (
     TrainingDepartment,
     Employee,
+    FilterRules,
     TimeSimulator,
     rotate_employees,
 )
@@ -11,6 +12,7 @@ from employee_rotation.data import load_data, write_data
 def main():
     config = Config()
     t_simulator = TimeSimulator()
+    filters = FilterRules().add_filters(config.filters)
 
     departments_df, employees_df = load_data(config.INPUT_FOLDER / "data.csv")
 
@@ -38,14 +40,14 @@ def main():
     produce_rotation_output(
         departements, employees, lines, departements_track, employees_track
     )
-    
+
     # start delayed by month
     t_simulator.forward_in_future(config.delay_start_by_months)
 
     # rotate employees
     for _ in range(config.rotations):
         t_simulator.forward_in_future(config.rotation_length_in_months)
-        employees = rotate_employees(employees, departements)
+        employees = rotate_employees(employees, departements, filters)
 
         produce_rotation_output(
             departements, employees, lines, departements_track, employees_track
@@ -93,7 +95,9 @@ def format_employees_output(
                 dept = emp.current_department.name
                 indicator = "->"
 
-            if len(emp.previous_departments) == len(departements):
+            if len(emp.previous_departments) + len(emp.excluded_departments) == len(
+                departements
+            ):
                 action = "Training Completed"
                 dept = "Finished"
                 indicator = "**"
@@ -101,6 +105,7 @@ def format_employees_output(
             message = (
                 f"{action.rjust(30)}: {emp.full_name.ljust(30, '.')} {indicator} {dept}"
             )
+
             lines.append(message)
             employees_track[emp.full_name] = (emp.hash, emp.current_department)
     return lines

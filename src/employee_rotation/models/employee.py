@@ -2,7 +2,7 @@ from __future__ import annotations
 from random import choice
 from dateutil.relativedelta import relativedelta
 from dataclasses import dataclass, field
-from typing import Self, Optional, Literal
+from typing import Self, Optional, Literal, Callable
 from itertools import product
 import datetime as dt
 
@@ -38,6 +38,7 @@ class Employee:
     _current_department: Optional[TrainingDepartment] = None
     start_date: Optional[dt.datetime] = None
     previous_departments: list[TrainingDepartment] = field(default_factory=list)
+    excluded_departments: list[TrainingDepartment] = field(default_factory=list)
     time_simulator: TimeSimulator = dt.datetime  # type:ignore
 
     def __repr__(self) -> str:
@@ -136,6 +137,10 @@ class TrainingDepartment:
             emp.start_date = start_date_overright
         return self
 
+    def exclude_employee(self, emp: Employee) -> Self:
+        emp.excluded_departments.append(self)
+        return self
+
     def remove_employee(self, emp: Employee) -> Self:
         if emp not in self.employees:
             raise ValueError("Employee is not currently in this department")
@@ -153,6 +158,43 @@ class TrainingDepartment:
         )
 
 
+class FilterRules:
+    """
+    Apply filter rules.
+    """
+
+    def __init__(
+        self,
+        filters: Optional[list[Callable[[Employee, TrainingDepartment], bool]]] = None,
+    ) -> None:
+        self.filters = filters or list()
+
+    def check(self, emp: Employee, dept: TrainingDepartment) -> bool:
+        for fltr in self.filters:
+            if fltr(emp, dept):
+                return True
+        return False
+
+    def add_filters(self, names: list[str]) -> Self:
+        for name in names:
+            filter_func = getattr(self, name)
+            if filter_func is None:
+                raise ValueError(
+                    f"{name} is not a valid filter. please change your configration"
+                )
+            self.filters.append(filter_func)
+        return self
+
+    @staticmethod
+    def exclude_female_from_Immobilisations(
+        emp: Employee,
+        dept: TrainingDepartment,
+    ) -> bool:
+        if emp.sexe == "F" and dept.name == "Immobilisations":
+            return True
+        return False
+
+
 def rotate_one_employee(
     emp: Employee, departments: list[TrainingDepartment]
 ) -> Employee:
@@ -162,6 +204,7 @@ def rotate_one_employee(
 def rotate_employees(
     emps: list[Employee],
     departments: list[TrainingDepartment],
+    filter: FilterRules = FilterRules(filters=[]),
 ) -> list[Employee]:
     for emp in emps:
         if not emp.has_department():
@@ -174,6 +217,8 @@ def rotate_employees(
             continue
         elif dept in emp.previous_departments:
             continue
+        elif filter.check(emp, dept):
+            dept.exclude_employee(emp)
         elif not emp.has_department():
             dept.assign_employee(emp)
     return emps
