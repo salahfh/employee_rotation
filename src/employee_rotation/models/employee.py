@@ -1,6 +1,4 @@
 from __future__ import annotations
-from random import choice
-from dateutil.relativedelta import relativedelta
 from dataclasses import dataclass, field
 from typing import Self, Optional, Literal
 from itertools import product
@@ -10,6 +8,7 @@ from employee_rotation.models.exceptions import (
     DepartmentFullException,
     EmployeeNotAssignedtoDepartmentException,
 )
+from employee_rotation.models.rules import FilterRules
 
 
 @dataclass
@@ -23,11 +22,6 @@ class TimeSimulator:
     @classmethod
     def now(cls) -> dt.datetime:
         return dt.datetime.now() + dt.timedelta(days=30 * cls.forwarded_months)
-
-    @classmethod
-    def offset_month_randomly(cls, date: dt.datetime) -> dt.datetime:
-        """Adds a month or deduct a month randomly from a date"""
-        return date + relativedelta(months=choice([0, 1, 2]))
 
 
 @dataclass
@@ -162,77 +156,6 @@ class TrainingDepartment:
         return TrainingDepartment(
             name=row[0], duration_months=row[1], max_capacity=row[2]
         )
-
-
-class FilterRules:
-    """
-    Apply filter rules.
-
-    Operation rules are conserned with delaying the action.
-    Excelution rules are for permenat actions.
-    """
-
-    def __init__(
-        self,
-    ) -> None:
-        self.exclusion_filters = list()
-        self.operational_filters = list()
-
-    def check(
-        self,
-        emp: Employee,
-        dept: TrainingDepartment,
-        *,
-        filter_type: Literal["Exclusion", "Operation"],
-    ) -> bool:
-        filters = (
-            self.exclusion_filters
-            if filter_type == "Exclusion"
-            else self.operational_filters
-        )
-        for fltr in filters:
-            if fltr(emp, dept):
-                return True
-        return False
-
-    def add_filters(
-        self,
-        names: list[str],
-        *,
-        filter_type: Literal["Exclusion", "Operation"],
-    ) -> Self:
-        filters = (
-            self.exclusion_filters
-            if filter_type == "Exclusion"
-            else self.operational_filters
-        )
-        for name in names:
-            filter_func = getattr(self, name)
-            if filter_func is None:
-                raise ValueError(
-                    f"{name} is not a valid filter. please change your configration"
-                )
-            filters.append(filter_func)
-        return self
-
-    @staticmethod
-    def exclude_female_from_Immobilisations(
-        emp: Employee,
-        dept: TrainingDepartment,
-    ) -> bool:
-        if emp.sexe == "F" and dept.name == "Immobilisations":
-            return True
-        return False
-
-    @staticmethod
-    def cannot_move_more_than_limit(
-        emp: Employee,
-        dept: TrainingDepartment,
-    ) -> bool:
-        limit = 1
-        if dept._rotation_movement.count("+") > limit - 1:
-            return True
-        return False
 
 
 def rotate_one_employee(

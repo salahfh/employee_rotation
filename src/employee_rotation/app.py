@@ -35,7 +35,6 @@ def main():
     for row in employees_df.iter_rows():
         emp = Employee.new(row, departments=departements)
         emp.time_simulator = t_simulator
-        emp.start_date = t_simulator.offset_month_randomly(emp.start_date)  # type: ignore
         employees.append(emp)
     employees_track = {
         emp.full_name: (emp.hash, emp.current_department) for emp in employees
