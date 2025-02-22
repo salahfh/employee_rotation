@@ -6,7 +6,8 @@ from dataclasses import dataclass
 class Config:
     INPUT_FOLDER = Path().home() / "employee_rotation"
     OUTPUT_FOLDER = Path().home() / "employee_rotation"
-    rotations = 1000
+    years_of_plan = 15
+    rotations = years_of_plan * 12
     delay_start_by_months = 2
     rotation_length_in_months = 1.01
     exclution_filters = ["exclude_female_from_Immobilisations"]
