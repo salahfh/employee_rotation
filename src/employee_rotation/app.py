@@ -71,6 +71,8 @@ def produce_rotation_output(
     lines.extend(format_employees_output(employees, employees_track, departements))
 
     if len(departements_formating):
+        lines.extend(format_employees_summary_output(employees, departements))
+
         lines.append("\n")
         lines.append("-----" * 20)
 
@@ -111,6 +113,7 @@ def format_employees_output(
 
             lines.append(message)
             employees_track[emp.full_name] = (emp.hash, emp.current_department)
+
     return lines
 
 
@@ -135,6 +138,33 @@ def format_depatements_output(
             f"{dept._rotation_movement.count('+')}+)"
         )
         departements_track[dept.name] = dept.hash
+    return lines
+
+
+def format_employees_summary_output(
+    employees: list[Employee],
+    departements: list[TrainingDepartment],
+) -> list[str]:
+    lines = []
+
+    finished = sum(
+        (
+            1
+            for emp in employees
+            if len(emp.previous_departments) + len(emp.excluded_departments)
+            == len(departements)
+        )
+    )
+    waiting = abs(
+        sum((1 for emp in employees if emp.current_department is None)) - finished
+    )
+    assigned = sum(1 for emp in employees if emp.current_department is not None)
+    summary = (
+        "\n"
+        f"{'Employees summary'.rjust(30)}: {waiting} Waiting /  {assigned} Assigned / {finished} Finished"
+    )
+    lines.append(summary)
+
     return lines
 
 
