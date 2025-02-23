@@ -43,7 +43,8 @@ class Employee:
     )
     excluded_departments: list[TrainingDepartment] = field(default_factory=list)
     time_simulator: TimeSimulator = dt.datetime  # type:ignore
-    status: Status = Status.ASSIGNED
+    _status: Status = Status.ASSIGNED
+    _changed: bool = False
 
     def __repr__(self) -> str:
         return f"{self.first_name} works in {self.current_department} since {self.days_spent_training:.0f} month(s)"
@@ -55,6 +56,18 @@ class Employee:
 
     def has_department(self):
         return self.status == Status.ASSIGNED
+
+    def reset_mouvement_counter(self):
+        self._changed = False
+
+    @property
+    def status(self) -> Status:
+        return self._status
+
+    @status.setter
+    def status(self, value: Status):
+        self._status = value
+        self._changed = True
 
     @property
     def full_name(self):
@@ -78,18 +91,6 @@ class Employee:
             return 0
         now = self.time_simulator.now()
         return (now - self.start_date).days
-
-    @property
-    def hash(self):
-        return self.__hash__()
-
-    def __hash__(self):
-        dept = (
-            str(self.current_department.name)
-            if self.current_department is not None
-            else ""
-        )
-        return hash((self.full_name, dept))
 
     @staticmethod
     def new(row: tuple, departments: list[TrainingDepartment]) -> "Employee":
@@ -124,10 +125,6 @@ class TrainingDepartment:
     @property
     def current_capacity(self):
         return len(self.employees)
-
-    @property
-    def hash(self):
-        return hash(tuple((self.name, *self.employees)))
 
     def reset_mouvement_counter(self):
         self._rotation_movement = ""
@@ -169,10 +166,18 @@ class TrainingDepartment:
 
     @staticmethod
     def mark_finished(emp: Employee, departments: list[TrainingDepartment]):
-        if sum([len(emp.previous_departments), len(emp.excluded_departments)]) == len(
-            departments
+        if (
+            sum([len(emp.previous_departments), len(emp.excluded_departments)])
+            == len(departments)
+            and emp.status is not Status.FINISHED
         ):
             emp.status = Status.FINISHED
+
+    @staticmethod
+    def reassign_employee(emp: Employee):
+        if emp.status == Status.WAITING_REASSIGNMENT:
+            previous_dept = emp.previous_departments.pop()[1]
+            emp.current_department = previous_dept
 
     @staticmethod
     def new(row: tuple) -> "TrainingDepartment":
@@ -194,6 +199,9 @@ def rotate_employees(
 ) -> list[Employee]:
     for dept in departments:
         dept.reset_mouvement_counter()
+
+    for emp in emps:
+        emp.reset_mouvement_counter()
 
     for emp in emps:
         if not emp.has_department():
@@ -220,7 +228,7 @@ def rotate_employees(
 
     for emp in emps:
         TrainingDepartment.mark_finished(emp, departments)
-
+        # TrainingDepartment.reassign_employee(emp)
     return emps
 
 

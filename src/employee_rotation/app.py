@@ -26,20 +26,14 @@ def main():
         dept = TrainingDepartment(*row)
         dept.time_simulator = t_simulator
         departements.append(dept)
-    departements_track = {dept.name: dept.hash for dept in departements}
 
     for row in employees_df.iter_rows():
         emp = Employee.new(row, departments=departements)
         emp.time_simulator = t_simulator
         employees.append(emp)
-    employees_track = {
-        emp.full_name: (emp.hash, emp.current_department) for emp in employees
-    }
 
     # Before ratation
-    produce_rotation_output(
-        departements, employees, lines, departements_track, employees_track
-    )
+    produce_rotation_output(departements, employees, lines)
 
     # start delayed by month
     t_simulator.forward_in_future(config.delay_start_by_months)
@@ -49,9 +43,7 @@ def main():
         t_simulator.forward_in_future(config.rotation_length_in_months)
         employees = rotate_employees(employees, departements, rules)
 
-        produce_rotation_output(
-            departements, employees, lines, departements_track, employees_track
-        )
+        produce_rotation_output(departements, employees, lines)
 
     write_data(config.OUTPUT_FOLDER / "plan.txt", lines)
 
@@ -60,12 +52,10 @@ def produce_rotation_output(
     departements: list[TrainingDepartment],
     employees: list[Employee],
     lines: list[str],
-    departements_track: dict,
-    employees_track: dict,
 ):
-    departements_formating = format_depatements_output(departements, departements_track)
+    departements_formating = format_depatements_output(departements)
     lines.extend(departements_formating)
-    lines.extend(format_employees_output(employees, employees_track, departements))
+    lines.extend(format_employees_output(employees))
 
     if len(departements_formating):
         lines.extend(format_employees_summary_output(employees))
@@ -77,58 +67,52 @@ def produce_rotation_output(
 
 def format_employees_output(
     employees: list[Employee],
-    employees_track: dict,
-    departements: list[TrainingDepartment],
 ) -> list[str]:
     """
     Helper function for output formatting for employees
     """
     lines = []
     for emp in employees:
-        if employees_track[emp.full_name][0] == emp.hash:
+        if not emp._changed:
             continue
-        else:
-            if emp.status is Status.WAITING_REASSIGNMENT:
-                action = "Waiting Reassignment"
-                dept = employees_track[emp.full_name][1].name
-                indicator = "<-"
 
-            elif emp.status is Status.ASSIGNED:
+        match emp.status:
+            case Status.WAITING_REASSIGNMENT:
+                action = "Waiting Reassignment"
+                dept = emp.previous_departments[-1][1].name
+                indicator = "<-"
+            
+            case Status.ASSIGNED:
                 action = "Waiting Reassignment"
                 action = "Assigned"
                 dept = emp.current_department.name  # type: ignore
                 indicator = "->"
 
-            elif emp.status is Status.FINISHED:
+            case Status.FINISHED:
                 action = "Training Completed"
                 dept = "Finished"
                 indicator = "**"
 
-            else:
-                action = "Undefined"
-                dept = "Undefined"
-                indicator = "__"
+            case _:
+                raise NotImplementedError("Status case not implemented")
 
-            message = (
-                f"{action.rjust(30)}: {emp.full_name.ljust(30, '.')} {indicator} {dept}"
-            )
+        message = (
+            f"{action.rjust(30)}: {emp.full_name.ljust(30, '.')} {indicator} {dept}"
+        )
 
-            lines.append(message)
-            employees_track[emp.full_name] = (emp.hash, emp.current_department)
+        lines.append(message)
 
     return lines
 
 
-def format_depatements_output(
-    departements: list[TrainingDepartment], departements_track: dict
-) -> list[str]:
+def format_depatements_output(departements: list[TrainingDepartment]) -> list[str]:
     """
     Helper function for output formatting for departements
     """
 
     lines = []
     for dept in sorted(departements, key=lambda dept: dept.max_capacity):
-        if departements_track[dept.name] == dept.hash:
+        if not dept._rotation_movement:
             continue
 
         lines.append(
@@ -139,7 +123,6 @@ def format_depatements_output(
             f"({dept._rotation_movement.count('-')}-/"
             f"{dept._rotation_movement.count('+')}+)"
         )
-        departements_track[dept.name] = dept.hash
     return lines
 
 
