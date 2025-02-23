@@ -2,6 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Self, Optional, Literal
 from itertools import product
+from enum import Enum, auto
 import datetime as dt
 
 from employee_rotation.models.exceptions import (
@@ -9,6 +10,12 @@ from employee_rotation.models.exceptions import (
     EmployeeNotAssignedtoDepartmentException,
 )
 from employee_rotation.models.rules import FilterRules
+
+
+class Status(Enum):
+    ASSIGNED = auto()
+    WAITING_REASSIGNMENT = auto()
+    FINISHED = auto()
 
 
 @dataclass
@@ -31,9 +38,12 @@ class Employee:
     sexe: Literal["M", "F"] = "M"
     _current_department: Optional[TrainingDepartment] = None
     start_date: Optional[dt.datetime] = None
-    previous_departments: list[TrainingDepartment] = field(default_factory=list)
+    previous_departments: list[tuple[dt.datetime, TrainingDepartment]] = field(
+        default_factory=list
+    )
     excluded_departments: list[TrainingDepartment] = field(default_factory=list)
     time_simulator: TimeSimulator = dt.datetime  # type:ignore
+    status: Status = Status.ASSIGNED
 
     def __repr__(self) -> str:
         return f"{self.first_name} works in {self.current_department} since {self.days_spent_training:.0f} month(s)"
@@ -44,7 +54,7 @@ class Employee:
         return self.current_department.duration - self.days_spent_training < 0
 
     def has_department(self):
-        return self.current_department is not None
+        return self.status == Status.ASSIGNED
 
     @property
     def full_name(self):
@@ -57,7 +67,9 @@ class Employee:
     @current_department.setter
     def current_department(self, value: Optional[TrainingDepartment]):
         if self._current_department is not None:
-            self.previous_departments.append(self._current_department)
+            self.previous_departments.append(
+                (self.time_simulator.now(), self._current_department)
+            )
         self._current_department = value
 
     @property
@@ -134,6 +146,7 @@ class TrainingDepartment:
         if start_date_overright:
             emp.start_date = start_date_overright
         self._rotation_movement += "+"
+        emp.status = Status.ASSIGNED
         return self
 
     def exclude_employee(self, emp: Employee) -> Self:
@@ -149,8 +162,17 @@ class TrainingDepartment:
                 self.employees.remove(emp)
                 emp.current_department = None
                 emp.start_date = None
+                break
         self._rotation_movement += "-"
+        emp.status = Status.WAITING_REASSIGNMENT
         return self
+
+    @staticmethod
+    def mark_finished(emp: Employee, departments: list[TrainingDepartment]):
+        if sum([len(emp.previous_departments), len(emp.excluded_departments)]) == len(
+            departments
+        ):
+            emp.status = Status.FINISHED
 
     @staticmethod
     def new(row: tuple) -> "TrainingDepartment":
@@ -184,7 +206,9 @@ def rotate_employees(
     for emp, dept in product(emps, departments):
         if not dept.has_capacity():
             continue
-        elif dept in emp.previous_departments:
+        elif dept in [
+            d[1] for d in emp.previous_departments
+        ]:  # make it as business rule
             continue
         elif filter.check(emp, dept, filter_type="Exclusion"):
             dept.exclude_employee(emp)
@@ -192,6 +216,10 @@ def rotate_employees(
             continue
         elif not emp.has_department():
             dept.assign_employee(emp)
+
+    for emp in emps:
+        TrainingDepartment.mark_finished(emp, departments)
+
     return emps
 
 

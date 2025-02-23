@@ -5,6 +5,7 @@ from employee_rotation.models import (
     FilterRules,
     TimeSimulator,
     rotate_employees,
+    Status,
 )
 from employee_rotation.data import load_data, write_data
 
@@ -71,7 +72,8 @@ def produce_rotation_output(
     lines.extend(format_employees_output(employees, employees_track, departements))
 
     if len(departements_formating):
-        lines.extend(format_employees_summary_output(employees, departements))
+        lines.extend(format_employees_summary_output(employees))
+        lines.extend(format_departments_summary_output(departements))
 
         lines.append("\n")
         lines.append("-----" * 20)
@@ -90,22 +92,26 @@ def format_employees_output(
         if employees_track[emp.full_name][0] == emp.hash:
             continue
         else:
-            if emp.current_department is None:
+            if emp.status is Status.WAITING_REASSIGNMENT:
                 action = "Waiting Reassignment"
                 dept = employees_track[emp.full_name][1].name
                 indicator = "<-"
 
-            else:
+            elif emp.status is Status.ASSIGNED:
+                action = "Waiting Reassignment"
                 action = "Assigned"
-                dept = emp.current_department.name
+                dept = emp.current_department.name  # type: ignore
                 indicator = "->"
 
-            if len(emp.previous_departments) + len(emp.excluded_departments) == len(
-                departements
-            ):
+            elif emp.status is Status.FINISHED:
                 action = "Training Completed"
                 dept = "Finished"
                 indicator = "**"
+
+            else:
+                action = "Undefined"
+                dept = "Undefined"
+                indicator = "__"
 
             message = (
                 f"{action.rjust(30)}: {emp.full_name.ljust(30, '.')} {indicator} {dept}"
@@ -141,24 +147,32 @@ def format_depatements_output(
     return lines
 
 
-def format_employees_summary_output(
-    employees: list[Employee],
+def format_departments_summary_output(
     departements: list[TrainingDepartment],
 ) -> list[str]:
     lines = []
+    max_capacity = sum(dept.max_capacity for dept in departements)
+    occupied_capacity = sum(dept.current_capacity for dept in departements)
+    empty_sport = max_capacity - occupied_capacity
+    summary = (
+        "\n"
+        f"{'Departments summary'.rjust(30)}:"
+        f" {occupied_capacity} Occupied /"
+        f" {empty_sport} Empty /"
+        f" {max_capacity} Max Capacity "
+    )
+    lines.append(summary)
+    return lines
 
-    finished = sum(
-        (
-            1
-            for emp in employees
-            if len(emp.previous_departments) + len(emp.excluded_departments)
-            == len(departements)
-        )
-    )
-    waiting = abs(
-        sum((1 for emp in employees if emp.current_department is None)) - finished
-    )
-    assigned = sum(1 for emp in employees if emp.current_department is not None)
+
+def format_employees_summary_output(
+    employees: list[Employee],
+) -> list[str]:
+    lines = []
+
+    finished = sum(1 for emp in employees if emp.status is Status.FINISHED)
+    waiting = sum(1 for emp in employees if emp.status is Status.WAITING_REASSIGNMENT)
+    assigned = sum(1 for emp in employees if emp.status is Status.ASSIGNED)
     summary = (
         "\n"
         f"{'Employees summary'.rjust(30)}: {waiting} Waiting /  {assigned} Assigned / {finished} Finished"

@@ -81,6 +81,6 @@ class FilterRules:
         emp: Employee, dept: TrainingDepartment, limit: int
     ) -> bool:
         limit = min(limit, dept.max_capacity)
-        if dept._rotation_movement.count("+") > limit - 1:
+        if dept._rotation_movement.count("+") >= limit:
             return True
         return False
