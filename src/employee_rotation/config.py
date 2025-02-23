@@ -13,7 +13,7 @@ class Config:
     rules = [
         "train_once_in_each_dept",
         "exclude_female_from_Immobilisations",
-        # ("cannot_move_more_than_limit", {"limit": 1})
+        ("cannot_move_more_than_limit", {"limit": 1})
     ]
 
     def __post_init__(self):

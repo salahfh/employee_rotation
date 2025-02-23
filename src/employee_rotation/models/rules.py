@@ -87,12 +87,12 @@ class Rules:
         return False
 
     @staticmethod
-    @meta(position="Post", category="Operation")
+    @meta(position="Pre", category="Operation")
     def cannot_move_more_than_limit(
         emp: Employee, dept: TrainingDepartment, limit: int
     ) -> bool:
         limit = min(limit, dept.max_capacity)
-        if dept._rotation_movement.count("+") >= limit:
+        if dept._rotation_movement.count("-") >= limit:
             return True
         return False
 
