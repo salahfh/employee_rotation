@@ -9,7 +9,7 @@ from employee_rotation.models.exceptions import (
     DepartmentFullException,
     EmployeeNotAssignedtoDepartmentException,
 )
-from employee_rotation.models.rules import FilterRules
+from employee_rotation.models.rules import Rules
 
 
 class Status(Enum):
@@ -190,7 +190,7 @@ def rotate_one_employee(
 def rotate_employees(
     emps: list[Employee],
     departments: list[TrainingDepartment],
-    filter: FilterRules = FilterRules(),
+    rules: Rules = Rules(),
 ) -> list[Employee]:
     for dept in departments:
         dept.reset_mouvement_counter()
@@ -198,7 +198,12 @@ def rotate_employees(
     for emp in emps:
         if not emp.has_department():
             continue
-        if filter.check(emp, emp.current_department, filter_type="Operation"):  # type: ignore
+        if rules.check(
+            emp,
+            emp.current_department,  # type: ignore
+            category="Operation",
+            position="Pre",
+        ):
             continue
         if emp.has_completed_training():
             emp.current_department.remove_employee(emp)  # type: ignore
@@ -206,13 +211,9 @@ def rotate_employees(
     for emp, dept in product(emps, departments):
         if not dept.has_capacity():
             continue
-        elif dept in [
-            d[1] for d in emp.previous_departments
-        ]:  # make it as business rule
-            continue
-        elif filter.check(emp, dept, filter_type="Exclusion"):
+        elif rules.check(emp, dept, category="Exclusion", position="Post"):
             dept.exclude_employee(emp)
-        elif filter.check(emp, dept, filter_type="Operation"):
+        elif rules.check(emp, dept, category="Operation", position="Post"):
             continue
         elif not emp.has_department():
             dept.assign_employee(emp)

@@ -1,54 +1,47 @@
 from __future__ import annotations
-from typing import TYPE_CHECKING, Literal, Self, Any
-from functools import partial
+from typing import TYPE_CHECKING, Literal, Self, Any, Callable
+from functools import partial, wraps
 
 if TYPE_CHECKING:
     from employee_rotation.models.employee import Employee, TrainingDepartment
 
 
-class FilterRules:
+class Rules:
     """
     Apply filter rules.
 
-    Operation rules are conserned with delaying the action.
-    Excelution rules are for permenat actions.
+    Category:
+    * Operation rules are business general.
+    * Excelution rules are for permenat actions.
+
+    Position: Depending on the location the check function is called.
+    * Pre: applied during removal of department
+    * Post: applied during assignment of department
     """
 
     def __init__(
         self,
     ) -> None:
-        self.exclusion_filters = list()
-        self.operational_filters = list()
+        self.rules = list()
 
     def check(
         self,
         emp: Employee,
         dept: TrainingDepartment,
         *,
-        filter_type: Literal["Exclusion", "Operation"],
+        category: Literal["Exclusion", "Operation"],
+        position: Literal["Pre", "Post", "All"] = "All",
     ) -> bool:
-        filters = (
-            self.exclusion_filters
-            if filter_type == "Exclusion"
-            else self.operational_filters
-        )
-        for fltr in filters:
-            if fltr(emp, dept):
+        for fltr in self.rules:
+            if fltr(emp, dept, position=position, category=category):
                 return True
         return False
 
-    def add_filters(
+    def add_rules(
         self,
-        filter_item: list[str] | list[tuple[str, dict[str, Any]]],
-        *,
-        filter_type: Literal["Exclusion", "Operation"],
+        rules: list[str] | list[tuple[str, dict[str, Any]]],
     ) -> Self:
-        filters = (
-            self.exclusion_filters
-            if filter_type == "Exclusion"
-            else self.operational_filters
-        )
-        for item in filter_item:
+        for item in rules:
             match item:
                 case f_name, kwargs:
                     f_name = f_name
@@ -56,18 +49,35 @@ class FilterRules:
                 case f_name:
                     f_name = f_name
                     kwargs = {}
-
             if not hasattr(self, f_name):
                 raise ValueError(
-                    f"{f_name} is not a valid filter. please change your configration"
+                    f"{f_name} is not a valid rule. please change your configration"
                 )
-
-            filter_func = partial(getattr(self, f_name), **kwargs)
-            filters.append(filter_func)
-
+            rule_func = partial(getattr(self, f_name), **kwargs)
+            self.rules.append(rule_func)
         return self
 
     @staticmethod
+    def meta(
+        *,
+        position: Literal["All", "Pre", "Post"],
+        category: Literal["Operation", "Exclusion"],
+    ):
+        def decorated(f: Callable):
+            @wraps(f)
+            def wrapper(*args, **kwargs):
+                position_match = position == kwargs.pop("position")
+                category_match = category == kwargs.pop("category")
+                if category_match and position_match:
+                    return f(*args, **kwargs)
+                return False
+
+            return wrapper
+
+        return decorated
+
+    @staticmethod
+    @meta(position="Post", category="Exclusion")
     def exclude_female_from_Immobilisations(
         emp: Employee,
         dept: TrainingDepartment,
@@ -77,10 +87,18 @@ class FilterRules:
         return False
 
     @staticmethod
+    @meta(position="Post", category="Operation")
     def cannot_move_more_than_limit(
         emp: Employee, dept: TrainingDepartment, limit: int
     ) -> bool:
         limit = min(limit, dept.max_capacity)
         if dept._rotation_movement.count("+") >= limit:
+            return True
+        return False
+
+    @staticmethod
+    @meta(position="Post", category="Operation")
+    def train_once_in_each_dept(emp: Employee, dept: TrainingDepartment) -> bool:
+        if dept in (d[1] for d in emp.previous_departments):
             return True
         return False

@@ -2,7 +2,7 @@ from employee_rotation.config import Config
 from employee_rotation.models import (
     TrainingDepartment,
     Employee,
-    FilterRules,
+    Rules,
     TimeSimulator,
     rotate_employees,
     Status,
@@ -13,11 +13,7 @@ from employee_rotation.data import load_data, write_data
 def main():
     config = Config()
     t_simulator = TimeSimulator()
-    filters = (
-        FilterRules()
-        .add_filters(config.exclution_filters, filter_type="Exclusion")
-        .add_filters(config.operation_filters, filter_type="Operation")
-    )
+    rules = Rules().add_rules(config.rules)
 
     departments_df, employees_df = load_data(config.INPUT_FOLDER / "data.csv")
 
@@ -51,7 +47,7 @@ def main():
     # rotate employees
     for _ in range(config.rotations):
         t_simulator.forward_in_future(config.rotation_length_in_months)
-        employees = rotate_employees(employees, departements, filters)
+        employees = rotate_employees(employees, departements, rules)
 
         produce_rotation_output(
             departements, employees, lines, departements_track, employees_track
