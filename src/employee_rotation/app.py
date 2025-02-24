@@ -61,7 +61,6 @@ def produce_rotation_output(
     lines.extend(format_employees_output(employees))
 
     if len(departements_formating):
-        # lines.extend(format_employees_summary_output(employees))
         lines.extend(format_departments_summary_output(departements))
 
         lines.append("\n")
@@ -81,23 +80,22 @@ def format_employees_output(
 
         match emp.status:
             case Status.WAITING_REASSIGNMENT:
+                indicator = "<-"
                 action = "Waiting Reassignment"
                 try:
                     dept = emp.previous_departments[-1][0].name
                 except IndexError:
                     dept = emp.current_department.name  # type: ignore
-                indicator = "<-"
 
             case Status.ASSIGNED:
-                action = "Waiting Reassignment"
+                indicator = "->"
                 action = "Assigned"
                 dept = emp.current_department.name  # type: ignore
-                indicator = "->"
 
             case Status.FINISHED:
+                indicator = "**"
                 action = "Training Completed"
                 dept = "Finished"
-                indicator = "**"
 
             case _:
                 raise NotImplementedError("Status case not implemented")
@@ -152,23 +150,6 @@ def format_departments_summary_output(
         f" {max_capacity} Max Capacity "
     )
     lines.append(summary)
-    return lines
-
-
-def format_employees_summary_output(
-    employees: list[Employee],
-) -> list[str]:
-    lines = []
-
-    finished = sum(1 for emp in employees if emp.status is Status.FINISHED)
-    waiting = sum(1 for emp in employees if emp.status is Status.WAITING_REASSIGNMENT)
-    assigned = sum(1 for emp in employees if emp.status is Status.ASSIGNED)
-    summary = (
-        "\n"
-        f"{'Employees summary'.rjust(32)}: {waiting} Waiting /  {assigned} Assigned / {finished} Finished"
-    )
-    lines.append(summary)
-
     return lines
 
 
