@@ -45,7 +45,10 @@ def main():
 
         produce_rotation_output(departements, employees, lines)
 
+    plan_per_emp = employees_training_plan(employees)
+
     write_data(config.OUTPUT_FOLDER / "plan.txt", lines)
+    write_data(config.OUTPUT_FOLDER / "plan_per_emp.txt", plan_per_emp, clean=True)
 
 
 def produce_rotation_output(
@@ -58,7 +61,7 @@ def produce_rotation_output(
     lines.extend(format_employees_output(employees))
 
     if len(departements_formating):
-        lines.extend(format_employees_summary_output(employees))
+        # lines.extend(format_employees_summary_output(employees))
         lines.extend(format_departments_summary_output(departements))
 
         lines.append("\n")
@@ -167,6 +170,23 @@ def format_employees_summary_output(
     lines.append(summary)
 
     return lines
+
+
+def employees_training_plan(
+    employees: list[Employee],
+) -> list[str]:
+    plan = []
+    for i, emp in enumerate(employees):
+        plan.extend(
+            [
+                ",".join(
+                    (str(i + 1), emp.full_name, entry[0].strftime("%x"), entry[1].name)
+                )
+                for entry in emp.previous_departments
+            ]
+        )
+
+    return plan
 
 
 if __name__ == "__main__":

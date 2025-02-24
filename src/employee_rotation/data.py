@@ -35,8 +35,9 @@ def load_data(input_file: Path):
     return department, employees
 
 
-def write_data(file: Path, data: list[str]):
-    data = clean_up_output(data)
+def write_data(file: Path, data: list[str], clean=False):
+    if not clean:
+        data = clean_up_output(data)
     with open(file, "w") as f:
         for line in data:
             f.write(line)
