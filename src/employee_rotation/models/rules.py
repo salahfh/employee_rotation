@@ -99,6 +99,6 @@ class Rules:
     @staticmethod
     @meta(position="Post", category="Operation")
     def train_once_in_each_dept(emp: Employee, dept: TrainingDepartment) -> bool:
-        if dept in (d[1] for d in emp.previous_departments):
+        if dept in (d[0] for d in emp.previous_departments):
             return True
         return False

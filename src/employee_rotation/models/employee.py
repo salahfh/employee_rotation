@@ -38,8 +38,8 @@ class Employee:
     sexe: Literal["M", "F"] = "M"
     _current_department: Optional[TrainingDepartment] = None
     start_date: Optional[dt.datetime] = None
-    previous_departments: list[tuple[dt.datetime, TrainingDepartment]] = field(
-        default_factory=list
+    previous_departments: list[tuple[TrainingDepartment, dt.datetime, dt.datetime]] = (
+        field(default_factory=list)
     )
     excluded_departments: list[TrainingDepartment] = field(default_factory=list)
     time_simulator: TimeSimulator = dt.datetime  # type:ignore
@@ -81,7 +81,7 @@ class Employee:
     def current_department(self, value: Optional[TrainingDepartment]):
         if self._current_department is not None:
             self.previous_departments.append(
-                (self.time_simulator.now(), self._current_department)
+                (self._current_department, self.start_date, self.time_simulator.now())  # type: ignore
             )
         self._current_department = value
 
@@ -194,7 +194,7 @@ class TrainingDepartment:
     @staticmethod
     def readd_non_training(emp: Employee, departments: list[TrainingDepartment]):
         if emp.status is not Status.ASSIGNED:
-            previous_dept = emp.previous_departments[-1][1]
+            previous_dept = emp.previous_departments[-1][0]
             for dept in departments:
                 if dept.name == previous_dept.name:
                     dept.non_training_employees.add(emp)

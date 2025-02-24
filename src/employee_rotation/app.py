@@ -83,7 +83,7 @@ def format_employees_output(
             case Status.WAITING_REASSIGNMENT:
                 action = "Waiting Reassignment"
                 try:
-                    dept = emp.previous_departments[-1][1].name
+                    dept = emp.previous_departments[-1][0].name
                 except IndexError:
                     dept = emp.current_department.name  # type: ignore
                 indicator = "<-"
@@ -180,7 +180,13 @@ def employees_training_plan(
         plan.extend(
             [
                 ",".join(
-                    (str(i + 1), emp.full_name, entry[0].strftime("%x"), entry[1].name)
+                    (
+                        str(i + 1),
+                        emp.full_name,
+                        entry[0].name,
+                        entry[1].strftime("%Y-%m"),
+                        entry[2].strftime("%Y-%m"),
+                    )
                 )
                 for entry in emp.previous_departments
             ]
