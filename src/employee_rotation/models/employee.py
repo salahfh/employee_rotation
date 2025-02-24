@@ -1,7 +1,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Self, Optional, Literal
-from itertools import product
+from itertools import product, repeat, chain
 from enum import Enum, auto
 import datetime as dt
 
@@ -105,6 +105,9 @@ class Employee:
                 break
         return emp
 
+    def __hash__(self):
+        return hash(f"{self.full_name} {self.sexe}")
+
 
 @dataclass
 class TrainingDepartment:
@@ -112,6 +115,7 @@ class TrainingDepartment:
     duration_months: int
     max_capacity: int
     employees: list[Employee] = field(default_factory=list)
+    non_training_employees: set[Employee] = field(default_factory=set)
     time_simulator: TimeSimulator = dt.datetime  # type: ignore
     _rotation_movement: str = ""
 
@@ -123,8 +127,22 @@ class TrainingDepartment:
         return self.duration_months * 30
 
     @property
-    def current_capacity(self):
+    def current_capacity(self) -> int:
         return len(self.employees)
+
+    @property
+    def waiting_reassignment(self) -> list[Employee]:
+        return [
+            emp
+            for emp in self.non_training_employees
+            if emp.status is Status.WAITING_REASSIGNMENT
+        ]
+
+    @property
+    def finished(self) -> list[Employee]:
+        return [
+            emp for emp in self.non_training_employees if emp.status is Status.FINISHED
+        ]
 
     def reset_mouvement_counter(self):
         self._rotation_movement = ""
@@ -174,10 +192,20 @@ class TrainingDepartment:
             emp.status = Status.FINISHED
 
     @staticmethod
-    def reassign_employee(emp: Employee):
-        if emp.status == Status.WAITING_REASSIGNMENT:
-            previous_dept = emp.previous_departments.pop()[1]
-            emp.current_department = previous_dept
+    def readd_non_training(emp: Employee, departments: list[TrainingDepartment]):
+        if emp.status is not Status.ASSIGNED:
+            previous_dept = emp.previous_departments[-1][1]
+            for dept in departments:
+                if dept.name == previous_dept.name:
+                    dept.non_training_employees.add(emp)
+
+        # Clear out assigned one
+        for dept in departments:
+            non_training = set()
+            for emp in dept.non_training_employees:
+                if emp.status is not Status.ASSIGNED:
+                    non_training.add(emp)
+            dept.non_training_employees = non_training
 
     @staticmethod
     def new(row: tuple) -> "TrainingDepartment":
@@ -216,7 +244,7 @@ def rotate_employees(
         if emp.has_completed_training():
             emp.current_department.remove_employee(emp)  # type: ignore
 
-    for emp, dept in product(emps, departments):
+    for emp, dept in product(emps, chain(*repeat(departments, 2))):
         if not dept.has_capacity():
             continue
         elif rules.check(emp, dept, category="Exclusion", position="Post"):
@@ -228,7 +256,7 @@ def rotate_employees(
 
     for emp in emps:
         TrainingDepartment.mark_finished(emp, departments)
-        # TrainingDepartment.reassign_employee(emp)
+        TrainingDepartment.readd_non_training(emp, departments)
     return emps
 
 

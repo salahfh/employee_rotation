@@ -79,9 +79,12 @@ def format_employees_output(
         match emp.status:
             case Status.WAITING_REASSIGNMENT:
                 action = "Waiting Reassignment"
-                dept = emp.previous_departments[-1][1].name
+                try:
+                    dept = emp.previous_departments[-1][1].name
+                except IndexError:
+                    dept = emp.current_department.name  # type: ignore
                 indicator = "<-"
-            
+
             case Status.ASSIGNED:
                 action = "Waiting Reassignment"
                 action = "Assigned"
@@ -97,7 +100,7 @@ def format_employees_output(
                 raise NotImplementedError("Status case not implemented")
 
         message = (
-            f"{action.rjust(30)}: {emp.full_name.ljust(30, '.')} {indicator} {dept}"
+            f"{action.rjust(32)}: {emp.full_name.ljust(30, '.')} {indicator} {dept}"
         )
 
         lines.append(message)
@@ -115,10 +118,13 @@ def format_depatements_output(departements: list[TrainingDepartment]) -> list[st
         if not dept._rotation_movement:
             continue
 
+        # actual_capacity = len(dept.non_training_employees) + len(dept.employees)
+        wait_reassignment = len(dept.waiting_reassignment)
+
         lines.append(
             f"{dept.time_simulator.now().strftime('%Y-%m')} "
             f"{dept.name.rjust(16)} "
-            f"({dept.current_capacity}/{dept.max_capacity}): "
+            f"({dept.current_capacity}/{dept.max_capacity}/{wait_reassignment}): "
             f"{sorted([emp.full_name for emp in dept.employees])} "
             f"({dept._rotation_movement.count('-')}-/"
             f"{dept._rotation_movement.count('+')}+)"
@@ -131,13 +137,15 @@ def format_departments_summary_output(
 ) -> list[str]:
     lines = []
     max_capacity = sum(dept.max_capacity for dept in departements)
-    occupied_capacity = sum(dept.current_capacity for dept in departements)
-    empty_sport = max_capacity - occupied_capacity
+    training = sum(dept.current_capacity for dept in departements)
+    wait_reassignment = sum(len(dept.waiting_reassignment) for dept in departements)
+    finished = sum(len(dept.finished) for dept in departements)
     summary = (
         "\n"
-        f"{'Departments summary'.rjust(30)}:"
-        f" {occupied_capacity} Occupied /"
-        f" {empty_sport} Empty /"
+        f"{'Departments summary'.rjust(32)}:"
+        f" {training} Training /"
+        f" {wait_reassignment} Waiting Reassignment /"
+        f" {finished} Finished /"
         f" {max_capacity} Max Capacity "
     )
     lines.append(summary)
@@ -154,7 +162,7 @@ def format_employees_summary_output(
     assigned = sum(1 for emp in employees if emp.status is Status.ASSIGNED)
     summary = (
         "\n"
-        f"{'Employees summary'.rjust(30)}: {waiting} Waiting /  {assigned} Assigned / {finished} Finished"
+        f"{'Employees summary'.rjust(32)}: {waiting} Waiting /  {assigned} Assigned / {finished} Finished"
     )
     lines.append(summary)
 
